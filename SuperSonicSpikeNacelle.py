@@ -203,7 +203,7 @@ point12 = hsf.add_new_point_coord(0,47,0)
 construction_elements.append_hybrid_shape(point12)
 document.part.update()
 
-point13 = hsf.add_new_point_coord(-500,47,0)
+point13 = hsf.add_new_point_coord(-1500,47,0)
 construction_elements.append_hybrid_shape(point13)
 document.part.update()
 
@@ -308,18 +308,22 @@ stator_blade_pattern = shpfac.add_new_circ_pattern(solid_stator_blade, 1, 20, 0,
 document.part.update()
 
 #Stator ring
-p14 = hsf.add_new_point_coord(-323, 73, 0)
-p15 = hsf.add_new_point_coord(-323, 77, 0)
-p16 = hsf.add_new_point_coord(-342, 77, 0)
-p17 = hsf.add_new_point_coord(-342, 73, 0)
+point20 = hsf.add_new_point_coord(-323, 73, 0)
+construction_elements.append_hybrid_shape(point20)
+point21 = hsf.add_new_point_coord(-323, 77, 0)
+construction_elements.append_hybrid_shape(point21)
+point22 = hsf.add_new_point_coord(-342, 77, 0)
+construction_elements.append_hybrid_shape(point22)
+point23 = hsf.add_new_point_coord(-342, 73, 0)
+construction_elements.append_hybrid_shape(point23)
 
 ring_profile = hsf.add_new_polyline()
-ring_profile.insert_element(p14, 0)
-ring_profile.insert_element(p14, 1)
-ring_profile.insert_element(p15, 2)
-ring_profile.insert_element(p16, 3)
-ring_profile.insert_element(p17, 4)
-ring_profile.insert_element(p14, 5)
+ring_profile.insert_element(point20, 0)
+ring_profile.insert_element(point20, 1)
+ring_profile.insert_element(point21, 2)
+ring_profile.insert_element(point22, 3)
+ring_profile.insert_element(point23, 4)
+ring_profile.insert_element(point20, 5)
 
 construction_elements.append_hybrid_shape(ring_profile)
 document.part.update()
@@ -338,3 +342,40 @@ document.part.update()
 #Make the ring solid
 solid_strut  = shpfac.add_new_close_surface(ring_revolve)
 document.part.update()
+
+#Inner Nacelle surface
+point24 = hsf.add_new_point_coord(-100, 87, 0)
+construction_elements.append_hybrid_shape(point24)
+document.part.update()
+
+point25 = hsf.add_new_point_coord(-125, 87, 0)
+construction_elements.append_hybrid_shape(point25)
+document.part.update()
+
+point26 = hsf.add_new_point_coord(-145, 86, 0)
+construction_elements.append_hybrid_shape(point26)
+document.part.update()
+
+spline5 = hsf.add_new_spline()
+spline5.add_point(point24)
+spline5.add_point(point25)
+spline5.add_point(point26)
+construction_elements.append_hybrid_shape(spline5)
+document.part.update()
+
+point27 = hsf.add_new_point_coord(-240, 78, 0)
+construction_elements.append_hybrid_shape(point27)
+document.part.update()
+
+point28 = hsf.add_new_point_coord(-323, 77, 0)
+construction_elements.append_hybrid_shape(point28)
+document.part.update()
+
+spline6 = hsf.add_new_spline()
+spline6.add_point(point26)
+spline6.add_point(point27)
+spline6.add_point(point28)
+construction_elements.append_hybrid_shape(spline6)
+document.part.update()
+
+#______________Curve upto the rotor blade ring ends here_____________
