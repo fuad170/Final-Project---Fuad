@@ -343,7 +343,9 @@ document.part.update()
 solid_strut  = shpfac.add_new_close_surface(ring_revolve)
 document.part.update()
 
-#Inner Nacelle surface
+#____________Inner Nacelle surface_________________________________________________
+#__________________________________________________________________________________
+
 point24 = hsf.add_new_point_coord(-100, 87, 0)
 construction_elements.append_hybrid_shape(point24)
 document.part.update()
@@ -376,6 +378,10 @@ spline6.add_point(point26)
 spline6.add_point(point27)
 spline6.add_point(point28)
 construction_elements.append_hybrid_shape(spline6)
+document.part.update()
+
+spline_one_for_inner_curve = hsf.add_new_join(spline5, spline6)
+construction_elements.append_hybrid_shape(spline_one_for_inner_curve)
 document.part.update()
 
 #______________Curve upto the rotor blade ring ends here_____________
@@ -470,5 +476,32 @@ nacelle_profile_part2.insert_element(point44, 17)
 construction_elements.append_hybrid_shape(nacelle_profile_part2)
 document.part.update()
 
+point45 = hsf.add_new_point_coord(-615, 87, 0)
+construction_elements.append_hybrid_shape(point45)
+document.part.update()
 
+point46 = hsf.add_new_point_coord(-620, 82, 0)
+construction_elements.append_hybrid_shape(point46)
+document.part.update()
 
+spline7 = hsf.add_new_spline()
+spline7.add_point(point44)
+spline7.add_point(point45)
+spline7.add_point(point46)
+construction_elements.append_hybrid_shape(spline7)
+document.part.update()
+
+curve_engine_part = hsf.add_new_join(nacelle_profile_part2, spline7)
+construction_elements.append_hybrid_shape(curve_engine_part)
+document.part.update()
+
+nacelle_inner_profile_curve = hsf.add_new_join(spline_one_for_inner_curve, curve_engine_part)
+construction_elements.append_hybrid_shape(nacelle_inner_profile_curve)
+document.part.update()
+
+##________Nacelle Profile Curve finished till convergent divergent nozzle__________####
+##_________Make Revolve_____________
+nacelle_inner_surface = hsf.add_new_revol(nacelle_inner_profile_curve, 0, 360, ref_axis_to_ptrn)
+construction_elements.append_hybrid_shape(nacelle_inner_surface)
+document.part.update()
+##______Inner Nacelle surface done
