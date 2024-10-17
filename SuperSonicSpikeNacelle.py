@@ -306,3 +306,36 @@ document.part.update()
 part.in_work_object = partbody
 stator_blade_pattern = shpfac.add_new_circ_pattern(solid_stator_blade, 1, 20, 0, 18, 1, 1, ref_axis_to_ptrn, ref_axis_to_ptrn, True, 0, True)
 document.part.update()
+
+#Stator ring
+p14 = hsf.add_new_point_coord(-323, 70, 0)
+p15 = hsf.add_new_point_coord(-323, 74, 0)
+p16 = hsf.add_new_point_coord(-342, 74, 0)
+p17 = hsf.add_new_point_coord(-342, 70, 0)
+
+ring_profile = hsf.add_new_polyline()
+ring_profile.insert_element(p14, 0)
+ring_profile.insert_element(p14, 1)
+ring_profile.insert_element(p15, 2)
+ring_profile.insert_element(p16, 3)
+ring_profile.insert_element(p17, 4)
+ring_profile.insert_element(p14, 5)
+
+construction_elements.append_hybrid_shape(ring_profile)
+document.part.update()
+
+ring_revolve = hsf.add_new_revol(ring_profile, 0, 360, ref_axis_to_ptrn)
+construction_elements.append_hybrid_shape(ring_revolve)
+document.part.update()
+
+#Hide the ring_surface
+selection.clear();
+selection.add(ring_revolve)
+selection.vis_properties.set_show(1) # 0: Show / 1: Hide
+selection.clear()
+document.part.update()
+
+#Make the ring solid
+solid_strut  = shpfac.add_new_close_surface(ring_revolve)
+document.part.update()
+
