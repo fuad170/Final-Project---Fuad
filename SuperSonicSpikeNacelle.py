@@ -4,6 +4,7 @@ from pycatia.enumeration.enumeration_types import cat_limit_mode
 from pycatia.enumeration.enumeration_types import cat_prism_orientation
 from pycatia.enumeration.enumeration_types import cat_constraint_type
 from pycatia.enumeration.enumeration_types import cat_constraint_mode
+from pycatia.enumeration.enumeration_types import cat_selection_filter
 
 caa = catia()
 application = caa.application
@@ -579,3 +580,36 @@ document.part.update()
 nacelle = shpfac.add_new_close_surface(nacelle_revolved_surface)
 document.part.update()
 
+
+#Create_cross_section
+# pt1 = hsf.add_new_point_coord(50, 47, -150)
+# construction_elements.append_hybrid_shape(pt1)
+# pt2 = hsf.add_new_point_coord(-800, 47, -150)
+# construction_elements.append_hybrid_shape(pt2)
+# pt3 = hsf.add_new_point_coord(-800, 150, -150)
+# construction_elements.append_hybrid_shape(pt3)
+# pt4 = hsf.add_new_point_coord(50, 150, -150) 
+# construction_elements.append_hybrid_shape(pt4)
+
+# pocket_rect = hsf.add_new_polyline()
+# pocket_rect.insert_element(pt1, 0)
+# pocket_rect.insert_element(pt1, 1)
+# pocket_rect.insert_element(pt2, 2)
+# pocket_rect.insert_element(pt3, 3)
+# pocket_rect.insert_element(pt4, 4)
+# pocket_rect.insert_element(pt1, 5)
+# construction_elements.append_hybrid_shape(pocket_rect)
+# document.part.update()
+
+# view = shpfac.add_new_pocket_from_ref(pocket_rect, 200)
+# document.part.update()
+
+selection.clear()
+caa.message_box('Select a surface', buttons=1, title='Make selection')
+selection.select_element2(('BiDim',), 'Select a surface', True)
+surf_ref = selection.item2(1).value
+print(surf_ref.name)
+selection.clear()
+
+shell = shpfac.add_new_shell(surf_ref, 0.5, 0)
+document.part.update()
