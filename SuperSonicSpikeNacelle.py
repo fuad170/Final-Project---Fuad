@@ -499,9 +499,83 @@ nacelle_inner_profile_curve = hsf.add_new_join(spline_one_for_inner_curve, curve
 construction_elements.append_hybrid_shape(nacelle_inner_profile_curve)
 document.part.update()
 
-##________Nacelle Profile Curve finished till convergent divergent nozzle__________####
-##_________Make Revolve_____________
-nacelle_inner_surface = hsf.add_new_revol(nacelle_inner_profile_curve, 0, 360, ref_axis_to_ptrn)
-construction_elements.append_hybrid_shape(nacelle_inner_surface)
+#converging diverging nozzle
+point47 = hsf.add_new_point_coord(-640, 77, 0)
+construction_elements.append_hybrid_shape(point47)
 document.part.update()
-##______Inner Nacelle surface done
+
+point48 = hsf.add_new_point_coord(-660, 82, 0)
+construction_elements.append_hybrid_shape(point48)
+document.part.update()
+
+spline8 = hsf.add_new_spline()
+spline8.add_point(point46)
+spline8.add_point(point47)
+spline8.add_point(point48)
+construction_elements.append_hybrid_shape(spline8)
+document.part.update()
+
+nacelle_inner_and_nozzle = hsf.add_new_join(nacelle_inner_profile_curve, spline8)
+construction_elements.append_hybrid_shape(nacelle_inner_and_nozzle)
+document.part.update()
+
+# point49 = hsf.add_new_point_coord(-700, 87, 0)
+# construction_elements.append_hybrid_shape(point49)
+# document.part.update()
+
+# line_exhaust = hsf.add_new_line_pt_pt(point48, point49)
+# construction_elements.append_hybrid_shape(line_exhaust)
+# document.part.update()
+
+point50 = hsf.add_new_point_coord(-240, 95, 0)
+construction_elements.append_hybrid_shape(point50)
+document.part.update()
+
+point51 = hsf.add_new_point_coord(-342, 95, 0)
+construction_elements.append_hybrid_shape(point51)
+document.part.update()
+
+point52 = hsf.add_new_point_coord(-460, 95, 0)
+construction_elements.append_hybrid_shape(point52)
+document.part.update()
+
+point53 = hsf.add_new_point_coord(-660, 95, 0)
+construction_elements.append_hybrid_shape(point53)
+document.part.update()
+
+spline9 = hsf.add_new_spline()
+spline9.add_point(point24)
+spline9.add_point(point50)
+spline9.add_point(point51)
+spline9.add_point(point52)
+spline9.add_point(point53)
+construction_elements.append_hybrid_shape(spline9)
+document.part.update()
+
+line_closing_nacelle_profile = hsf.add_new_line_pt_pt(point53, point48)
+construction_elements.append_hybrid_shape(line_closing_nacelle_profile)
+document.part.update()
+
+nacelle_outer_curve = hsf.add_new_join(spline9, line_closing_nacelle_profile)
+construction_elements.append_hybrid_shape(nacelle_outer_curve)
+
+nacelle_profile = hsf.add_new_join(nacelle_inner_and_nozzle, nacelle_outer_curve)
+construction_elements.append_hybrid_shape(nacelle_profile)
+document.part.update()
+
+##________Nacelle Profile Curve finished _________####
+##_________Make Revolve_____________
+nacelle_revolved_surface = hsf.add_new_revol(nacelle_profile, 0, 360, ref_axis_to_ptrn)
+construction_elements.append_hybrid_shape(nacelle_revolved_surface)
+document.part.update()
+
+#Hide the ring_surface
+selection.clear();
+selection.add(nacelle_revolved_surface)
+selection.vis_properties.set_show(1) # 0: Show / 1: Hide
+selection.clear()
+document.part.update()
+
+nacelle = shpfac.add_new_close_surface(nacelle_revolved_surface)
+document.part.update()
+
