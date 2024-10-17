@@ -379,3 +379,97 @@ construction_elements.append_hybrid_shape(spline6)
 document.part.update()
 
 #______________Curve upto the rotor blade ring ends here_____________
+
+#Engine Part
+#Create Polyline
+
+point29 = hsf.add_new_point_coord(-342, 77, 0)
+construction_elements.append_hybrid_shape(point29)
+document.part.update()
+
+point30 = hsf.add_new_point_coord(-370, 77, 0)
+construction_elements.append_hybrid_shape(point30)
+document.part.update()
+
+point31 = hsf.add_new_point_coord(-375, 80, 0)
+construction_elements.append_hybrid_shape(point31)
+document.part.update()
+
+point32 = hsf.add_new_point_coord(-405, 80, 0)
+construction_elements.append_hybrid_shape(point32)
+document.part.update()
+
+point33 = hsf.add_new_point_coord(-410, 77, 0)
+construction_elements.append_hybrid_shape(point33)
+document.part.update()
+
+point34 = hsf.add_new_point_coord(-415, 77, 0)
+construction_elements.append_hybrid_shape(point34)
+document.part.update()
+
+point35 = hsf.add_new_point_coord(-420, 80, 0)
+construction_elements.append_hybrid_shape(point35)
+document.part.update()
+
+point36 = hsf.add_new_point_coord(-460, 80, 0)
+construction_elements.append_hybrid_shape(point36)
+document.part.update()
+
+point37 = hsf.add_new_point_coord(-465, 77, 0)
+construction_elements.append_hybrid_shape(point37)
+document.part.update()
+
+point38 = hsf.add_new_point_coord(-495, 77, 0)
+construction_elements.append_hybrid_shape(point38)
+document.part.update()
+
+point39 = hsf.add_new_point_coord(-502, 78, 0)
+construction_elements.append_hybrid_shape(point39)
+document.part.update()
+
+point40 = hsf.add_new_point_coord(-507, 78, 0)
+construction_elements.append_hybrid_shape(point40)
+document.part.update()
+
+point41 = hsf.add_new_point_coord(-525, 82, 0)
+construction_elements.append_hybrid_shape(point41)
+document.part.update()
+
+point42 = hsf.add_new_point_coord(-570, 82, 0)
+construction_elements.append_hybrid_shape(point42)
+document.part.update()
+
+point43 = hsf.add_new_point_coord(-580, 87, 0)
+construction_elements.append_hybrid_shape(point43)
+document.part.update()
+
+point44 = hsf.add_new_point_coord(-610, 87, 0)
+construction_elements.append_hybrid_shape(point44)
+document.part.update()
+
+
+nacelle_profile_part2 = hsf.add_new_polyline()
+nacelle_profile_part2.insert_element(point29, 0)
+nacelle_profile_part2.insert_element(point29, 1)
+nacelle_profile_part2.insert_element(point30, 2)
+nacelle_profile_part2.insert_element(point31, 3)
+nacelle_profile_part2.insert_element(point32, 4)
+nacelle_profile_part2.insert_element(point33, 5)
+nacelle_profile_part2.insert_element(point34, 6)
+nacelle_profile_part2.insert_element(point35, 7)
+nacelle_profile_part2.insert_element(point36, 8)
+nacelle_profile_part2.insert_element(point37, 9)
+nacelle_profile_part2.insert_element(point38, 10)
+nacelle_profile_part2.insert_element(point39, 11)
+nacelle_profile_part2.insert_element(point40, 12)
+nacelle_profile_part2.insert_element(point41, 13)
+nacelle_profile_part2.insert_element(point42, 14)
+nacelle_profile_part2.insert_element(point43, 15)
+nacelle_profile_part2.insert_element(point44, 16)
+
+
+construction_elements.append_hybrid_shape(nacelle_profile_part2)
+document.part.update()
+
+
+
