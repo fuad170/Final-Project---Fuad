@@ -604,12 +604,12 @@ document.part.update()
 # view = shpfac.add_new_pocket_from_ref(pocket_rect, 200)
 # document.part.update()
 
-selection.clear()
-caa.message_box('Select a surface', buttons=1, title='Make selection')
-selection.select_element2(('BiDim',), 'Select a surface', True)
-surf_ref = selection.item2(1).value
-print(surf_ref.name)
-selection.clear()
+# selection.clear()
+# caa.message_box('Select a surface', buttons=1, title='Make selection')
+# selection.select_element2(('BiDim',), 'Select a surface', True)
+# surf_ref = selection.item2(1).value
+# print(surf_ref.name)
+# selection.clear()
 
-shell = shpfac.add_new_shell(surf_ref, 0.5, 0)
-document.part.update()
+# shell = shpfac.add_new_shell(surf_ref, 0.5, 0)
+# document.part.update()
