@@ -251,15 +251,15 @@ construction_elements.append_hybrid_shape(stator_blade_base)
 document.part.update()
 
 #end profile
-point17 = hsf.add_new_point_coord(-340, 47, 25)
+point17 = hsf.add_new_point_coord(-340, 47, 28)
 construction_elements.append_hybrid_shape(point17)
 document.part.update()
 
-point18 = hsf.add_new_point_coord(-333, 50, 25)
+point18 = hsf.add_new_point_coord(-333, 50, 28)
 construction_elements.append_hybrid_shape(point18)
 document.part.update()
 
-point19 = hsf.add_new_point_coord(-325, 50, 25)
+point19 = hsf.add_new_point_coord(-325, 50, 28)
 construction_elements.append_hybrid_shape(point19)
 document.part.update()
 
@@ -308,10 +308,10 @@ stator_blade_pattern = shpfac.add_new_circ_pattern(solid_stator_blade, 1, 20, 0,
 document.part.update()
 
 #Stator ring
-p14 = hsf.add_new_point_coord(-323, 70, 0)
-p15 = hsf.add_new_point_coord(-323, 74, 0)
-p16 = hsf.add_new_point_coord(-342, 74, 0)
-p17 = hsf.add_new_point_coord(-342, 70, 0)
+p14 = hsf.add_new_point_coord(-323, 73, 0)
+p15 = hsf.add_new_point_coord(-323, 77, 0)
+p16 = hsf.add_new_point_coord(-342, 77, 0)
+p17 = hsf.add_new_point_coord(-342, 73, 0)
 
 ring_profile = hsf.add_new_polyline()
 ring_profile.insert_element(p14, 0)
@@ -338,4 +338,3 @@ document.part.update()
 #Make the ring solid
 solid_strut  = shpfac.add_new_close_surface(ring_revolve)
 document.part.update()
-
