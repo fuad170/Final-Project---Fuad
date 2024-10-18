@@ -1,24 +1,31 @@
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#----------------------------Import Modules---------------------------
+#.....................................................................
 from pycatia import catia
 from pycatia.mec_mod_interfaces.part_document import PartDocument
-from pycatia.enumeration.enumeration_types import cat_limit_mode 
-from pycatia.enumeration.enumeration_types import cat_prism_orientation
-from pycatia.enumeration.enumeration_types import cat_constraint_type
-from pycatia.enumeration.enumeration_types import cat_constraint_mode
-from pycatia.enumeration.enumeration_types import cat_selection_filter
 
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#------------------------Initiate CATIA instance----------------------
+#.....................................................................
 caa = catia()
 application = caa.application
 documents = application.documents
 
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#----------Close all active documents and add a new part--------------
+#.....................................................................
 try:
     if documents.count > 0:
         for document in documents:
             document.close()
 except Exception as e:
     print(f"An exception occured{e}")
-
+#------------Add_New_Part-------------
 documents.add('Part')
 
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#-----------------Creating reference to main objects------------------
+#.....................................................................
 document: PartDocument = application.active_document
 part = document.part
 partbody = part.bodies[0]
@@ -28,588 +35,178 @@ hsf = part.hybrid_shape_factory
 shpfac = part.shape_factory
 selection = document.selection
 
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#-----------Creating reference to main coordinate planes--------------
+#.....................................................................
 plane_XY = part.origin_elements.plane_xy
 plane_YZ = part.origin_elements.plane_yz
 plane_ZX = part.origin_elements.plane_zx
 
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#-------Creating reference to directions along x, y and z axis--------
+#.....................................................................
+x_dir = hsf.add_new_direction_by_coord(1, 0, 0)
+y_dir = hsf.add_new_direction_by_coord(0, 1, 0)
+z_dir = hsf.add_new_direction_by_coord(0, 0, 1)
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#-----------------------Creating Geometrical Set----------------------
+#.....................................................................
+geometrical_set = hybrid_bodies.add()
+geometrical_set.name = "Construction Elements"
+
+#-----------Clearance Between Inlet Spike and Nacelle Body-----------
+clearance = 5
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#-------------------------Defininig Fucntions-------------------------
+#.....................................................................
+
+#Fucntion to generate points in geometrical set
+def create_construction_point(x, y, z):                 
+    point = hsf.add_new_point_coord(x, y, z)
+    geometrical_set.append_hybrid_shape(point)
+    document.part.update()
+    return point
+
+#Fucntion to generate lines in geometrical set
+def create_construction_line(point1, point2):           
+    line = hsf.add_new_line_pt_pt(point1, point2)
+    geometrical_set.append_hybrid_shape(line)
+    document.part.update()
+    return line
+
+#Fucntion to generate splines in geometrical set
+def create_construction_spline(*points):                
+    spline = hsf.add_new_spline()
+    for point in points:
+        spline.add_point(point)
+    geometrical_set.append_hybrid_shape(spline)
+    document.part.update()    
+    return spline
+
+#Fucntion to create revolved surface
+def create_surface_revolve(curve, start_angle, end_angle, revolve_axis):             
+    surfRevolution = hsf.add_new_revol(curve, start_angle, end_angle, revolve_axis)
+    geometrical_set.append_hybrid_shape(surfRevolution)
+    document.part.update() 
+    return surfRevolution
+
+#Fucntion to generate inlet spike
+def Inlet_Spike_Generator(l):
+    # l = Length of the spike from tip to root
+    # w = Maximum radius of the spike
+    global w
+    w = l/10
+    spike_profile = sketches.add(plane_XY)
+    spike_profile.name = "Spike Outer Profile"
+    spike2D = spike_profile.open_edition()
+    spike2D.create_spline((spike2D.create_control_point(l*0, w*0), spike2D.create_control_point(-l*0.4, w), 
+                           spike2D.create_control_point(-l*0.5, w*0.92), spike2D.create_control_point(-l*0.6, w*0.68), 
+                           spike2D.create_control_point(-l*0.7, w*0.52), spike2D.create_control_point(-l, w*0.4)))
+    spike2D.create_line(*(-l, w*0.4), *(-l, w*0))
+    spike2D.create_line(*(-l, w*0), *(l*0, w*0))
+    spike_profile.close_edition()
+    spike_solid = shpfac.add_new_shaft(spike_profile)
+    spike_solid.revolute_axis = x_dir
+    document.part.update()
+    return spike_solid
+
+def nacelle_generator(offset, L):
+    # T = Distance betwwen Spike Tip and Nacalle Tip
+    # d = Maximum clearance with the spike inlet
+    global d
+    d = w+clearance
+    #Construction Points
+    p1 = create_construction_point(-offset, d, 0)
+    p2 = create_construction_point(-(offset+(L/10)), d*(16/15), 0)
+    p3 = create_construction_point(-(offset+2*(L/10)), d, 0)
+    p4 = create_construction_point(-(offset+3*(L/10)), d*(14/15), 0)
+    p5 = create_construction_point(-(offset+4*(L/10)), d*(14/15), 0)
+    p6 = create_construction_point(-(offset+6*(L/10)), d*(29/30), 0)
+    p7 = create_construction_point(-(offset+8*(L/10)), d, 0)
+    p8 = create_construction_point(-(offset+8.5*(L/10)), d*(2/3), 0)
+    p9 = create_construction_point(-(offset+9*(L/10)), d, 0)
+    p10 = create_construction_point(-(offset+10*(L/10)), d*(4/3), 0)
+    p11 = create_construction_point(-(offset+L*3/25), (d+10), 0)
+    p12 = create_construction_point(-(offset+L*(11/50)), (d+12), 0)
+    p13 = create_construction_point(-(offset+L*(9/10)), (d+12), 0)
+    #Construction Line
+    Inner_Spline_1 = create_construction_spline(p1, p2, p3, p4, p5)
+    Inner_Spline_2 = create_construction_spline(p5, p6, p7)
+    Inner_Spline_3 = create_construction_spline(p7, p8, p9)
+    Inner_Line = create_construction_line(p9, p10)
+    Outer_Line_1 = create_construction_line(p13, p10)
+    Outer_Line_2 = create_construction_line(p12, p13)
+    Outer_spline = create_construction_spline(p1, p11, p12)
+    #Nacelle Profile Curve
+    nacelle_profile_curve = hsf.add_new_join(Inner_Spline_1, Inner_Spline_2)
+    geometrical_set.append_hybrid_shape(nacelle_profile_curve)
+    curves = [Inner_Spline_1, Inner_Spline_2, Inner_Spline_3, Inner_Line, Outer_Line_1, Outer_Line_2, Outer_spline]
+    for i in range(len(curves)-2):
+        nacelle_profile_curve = hsf.add_new_join(nacelle_profile_curve, curves[i+2])
+        geometrical_set.append_hybrid_shape(nacelle_profile_curve)
+
+    document.part.update()
+    return nacelle_profile_curve
+
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#-------------------------Creating Inlet Spike------------------------
+#.....................................................................
 part.in_work_object = partbody
+Inlet_Spike_Generator(250)
 
-spike_profile = sketches.add(plane_XY)
-spike_profile.name = "Spike Outer Profile"
-spike2D = spike_profile.open_edition()
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#------------------------Creating Nacelle Body------------------------
+#.....................................................................
 
-p1 = (0, 47)
-p2 = (-103, 79)
-p3 = (-110, 80)
-p4 = (-124, 80)
-p5 = (-148, 79)
-c1 = spike2D.create_control_point(-148, 79)
-c2 = spike2D.create_control_point(-182, 76)
-p7 = (-205, 71)
-c3 = spike2D.create_control_point(-205, 71)
-p8 = (-240, 70)
-c4 = spike2D.create_control_point(-240, 70)
-c5 = spike2D.create_control_point(-248, 69)
-p10 = (-264, 66)
-c6 = spike2D.create_control_point(-264, 66)
-p11 = (-310, 62)
-p12 = (-340, 62)
-p13 = (-340, 47)
+#------------Creating 2D profile-------------
+offset_from_tip = 50
+length_of_nacelle = 500   
+nacelle_2D_profile = nacelle_generator(offset_from_tip, length_of_nacelle)
 
+#-------------Revolved sruface---------------
+nacelle_surface = create_surface_revolve(nacelle_2D_profile, 0, 360, x_dir)
 
-spike2D.create_line(*p1, *p2)
-spike2D.create_line(*p2, *p3)
-spike2D.create_line(*p3, *p4)
-spike2D.create_line(*p4, *p5)
-spike2D.create_spline((c1, c2, c3))
-spike2D.create_line(*p7, *p8)
-spike2D.create_spline((c4, c5, c6))
-spike2D.create_line(*p10, *p11)
-spike2D.create_line(*p11, *p12)
-spike2D.create_line(*p12, *p13)
-spike2D.create_line(*p13, *p1)
-
-spike_profile.close_edition()
+#-----------------Make Solid-----------------
+nacelle = shpfac.add_new_close_surface(nacelle_surface)
 document.part.update()
 
-#Creating Geometrical Set
-construction_elements = hybrid_bodies.add()
-construction_elements.name = "construction_elements"
-
-#Creating Rev axis
-point1 = hsf.add_new_point_coord(10, 47, 0)
-construction_elements.append_hybrid_shape(point1)
-document.part.update()
-
-point2 = hsf.add_new_point_coord(-330, 47, 0)
-construction_elements.append_hybrid_shape(point2)
-document.part.update()
-
-rev_axis = hsf.add_new_line_pt_pt(point1, point2)
-rev_axis.name = "revolution_axis"
-construction_elements.append_hybrid_shape(rev_axis)
-document.part.update()
-
-part.in_work_object = partbody
-
-# Create shaft
-shaft1 = shpfac.add_new_shaft(spike_profile)
-shaft1.revolute_axis = rev_axis
-document.part.update()
-
-#End of Spike
-
-#start of strut
-#base profile points
-point3 = hsf.add_new_point_coord(-211,47,0)
-construction_elements.append_hybrid_shape(point3)
-document.part.update()
-
-point4 = hsf.add_new_point_coord(-235,56,0)
-construction_elements.append_hybrid_shape(point4)
-document.part.update()
-
-point5 = hsf.add_new_point_coord(-270,56,0)
-construction_elements.append_hybrid_shape(point5)
-document.part.update()
-
-point6 = hsf.add_new_point_coord(-297,47,0)
-construction_elements.append_hybrid_shape(point6)
-document.part.update()
-
-point7 = hsf.add_new_point_coord(-324,47,0)
-construction_elements.append_hybrid_shape(point7)
-document.part.update()
-
-spline1 = hsf.add_new_spline()
-spline1.add_point(point3)
-spline1.add_point(point4)
-spline1.add_point(point5)
-spline1.add_point(point6)
-construction_elements.append_hybrid_shape(spline1)
-document.part.update()
-
-mirror_line = hsf.add_new_line_pt_pt(point3, point7)
-construction_elements.append_hybrid_shape(mirror_line)
-document.part.update()
-
-symmetrical_spline1 = hsf.add_new_symmetry(spline1, mirror_line)
-construction_elements.append_hybrid_shape(symmetrical_spline1)
-document.part.update()
-
-strut_base_profile = hsf.add_new_join(spline1, symmetrical_spline1)
-strut_base_profile.name = "Strut_Base_Profile"
-construction_elements.append_hybrid_shape(strut_base_profile)
-document.part.update()
-
-#Upper Profile Points
-point8 = hsf.add_new_point_coord(-231,47,43)
-construction_elements.append_hybrid_shape(point8)
-document.part.update()
-
-point9 = hsf.add_new_point_coord(-265,52,43)
-construction_elements.append_hybrid_shape(point9)
-document.part.update()
-
-point10 = hsf.add_new_point_coord(-287,52,43)
-construction_elements.append_hybrid_shape(point10)
-document.part.update()
-
-point11 = hsf.add_new_point_coord(-317,47,43)
-construction_elements.append_hybrid_shape(point11)
-document.part.update()
-
-spline2 = hsf.add_new_spline()
-spline2.add_point(point8)
-spline2.add_point(point9)
-spline2.add_point(point10)
-spline2.add_point(point11)
-construction_elements.append_hybrid_shape(spline2)
-document.part.update()
-
-mirror_line2 = hsf.add_new_line_pt_pt(point8, point11)
-construction_elements.append_hybrid_shape(mirror_line2)
-document.part.update()
-
-symmetrical_spline2 = hsf.add_new_symmetry(spline2, mirror_line2)
-construction_elements.append_hybrid_shape(symmetrical_spline2)
-document.part.update()
-
-strut_end_profile = hsf.add_new_join(spline2, symmetrical_spline2)
-strut_end_profile.name = "Strut_Base_Profile"
-construction_elements.append_hybrid_shape(strut_end_profile)
-document.part.update()
-
-#add loft
-strut_surface = hsf.add_new_loft()
-strut_surface.add_section_to_loft(strut_base_profile,1,1)
-strut_surface.add_section_to_loft(strut_end_profile,1,1)
-construction_elements.append_hybrid_shape(strut_surface)
-document.part.update()
-
-#Hide the strut surface
+#-----------Hide Construction Surface-------------
 selection.clear();
-selection.add(strut_surface)
+selection.add(nacelle_surface)
 selection.vis_properties.set_show(1) # 0: Show / 1: Hide
 selection.clear()
 document.part.update()
 
-#Make the strut solid
-solid_strut  = shpfac.add_new_close_surface(strut_surface)
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#----------Creating Exhaut Nozzle with externel flaps-----------------
+#.....................................................................
+
+#------Creating the sketch to make pockets--------
+point_1 = create_construction_point(-(offset_from_tip+9*(length_of_nacelle/10)), 0, 0)
+point_2 = create_construction_point(-(offset_from_tip+10.1*(length_of_nacelle/10)), 0, 2)
+point_3 = create_construction_point(-(offset_from_tip+10.1*(length_of_nacelle/10)), 0, -2)
+
+flaps_pocket_triangle = hsf.add_new_polyline()
+flaps_pocket_triangle.insert_element(point_1, 0)
+flaps_pocket_triangle.insert_element(point_1, 1)
+flaps_pocket_triangle.insert_element(point_2, 2)
+flaps_pocket_triangle.insert_element(point_3, 3)
+flaps_pocket_triangle.insert_element(point_1, 4)
+geometrical_set.append_hybrid_shape(flaps_pocket_triangle)
 document.part.update()
 
-#Make pattern of the strut
-#Create Reference axis
-point12 = hsf.add_new_point_coord(0,47,0)
-construction_elements.append_hybrid_shape(point12)
+#-----------Creating Pocket-----------
+flaps_pocket = shpfac.add_new_pocket_from_ref(flaps_pocket_triangle, 200)
 document.part.update()
-
-point13 = hsf.add_new_point_coord(-1500,47,0)
-construction_elements.append_hybrid_shape(point13)
-document.part.update()
-
-ref_axis_to_ptrn = hsf.add_new_line_pt_pt(point12, point13)
-construction_elements.append_hybrid_shape(ref_axis_to_ptrn)
-document.part.update() 
-
-#Pattern
+#-------Adding Circular Pattern-------
 part.in_work_object = partbody
-strut_pattern = shpfac.add_new_circ_pattern(solid_strut, 1, 4, 0, 90, 1, 1, ref_axis_to_ptrn, ref_axis_to_ptrn, True, 0, True)
-document.part.update()
-
-#Creating stator
-#base profile
-point14 = hsf.add_new_point_coord(-340, 47, 0)
-construction_elements.append_hybrid_shape(point14)
-document.part.update()
-
-point15 = hsf.add_new_point_coord(-333, 50, 0)
-construction_elements.append_hybrid_shape(point15)
-document.part.update()
-
-point16 = hsf.add_new_point_coord(-325, 50, 0)
-construction_elements.append_hybrid_shape(point16)
-document.part.update()
-
-spline3 = hsf.add_new_spline()
-spline3.add_point(point14)
-spline3.add_point(point15)
-spline3.add_point(point16)
-construction_elements.append_hybrid_shape(spline3)
-document.part.update()
-
-mirror_line3 = hsf.add_new_line_pt_pt(point14, point16)
-construction_elements.append_hybrid_shape(mirror_line3)
-document.part.update()
-
-symmetrical_spline3 = hsf.add_new_symmetry(spline3, mirror_line3)
-construction_elements.append_hybrid_shape(symmetrical_spline3)
-document.part.update()
-
-stator_blade_base = hsf.add_new_join(spline3, symmetrical_spline3)
-stator_blade_base.name = "stator_blade_base"
-construction_elements.append_hybrid_shape(stator_blade_base)
-document.part.update()
-
-#end profile
-point17 = hsf.add_new_point_coord(-340, 47, 28)
-construction_elements.append_hybrid_shape(point17)
-document.part.update()
-
-point18 = hsf.add_new_point_coord(-333, 50, 28)
-construction_elements.append_hybrid_shape(point18)
-document.part.update()
-
-point19 = hsf.add_new_point_coord(-325, 50, 28)
-construction_elements.append_hybrid_shape(point19)
-document.part.update()
-
-spline4 = hsf.add_new_spline()
-spline4.add_point(point17)
-spline4.add_point(point18)
-spline4.add_point(point19)
-construction_elements.append_hybrid_shape(spline4)
-document.part.update()
-
-mirror_line4 = hsf.add_new_line_pt_pt(point17, point19)
-construction_elements.append_hybrid_shape(mirror_line4)
-document.part.update()
-
-symmetrical_spline4 = hsf.add_new_symmetry(spline4, mirror_line4)
-construction_elements.append_hybrid_shape(symmetrical_spline4)
-document.part.update()
-
-stator_blade_end = hsf.add_new_join(spline4, symmetrical_spline4)
-stator_blade_end.name = "stator_blade_base"
-construction_elements.append_hybrid_shape(stator_blade_end)
-document.part.update()
-
-#add loft
-stator_blade_surface = hsf.add_new_loft()
-stator_blade_surface.add_section_to_loft(stator_blade_base,1,1)
-stator_blade_surface.add_section_to_loft(stator_blade_end,1,1)
-construction_elements.append_hybrid_shape(stator_blade_surface)
-document.part.update()
-
-#Hide the stator surface
-selection.clear();
-selection.add(stator_blade_surface)
-selection.vis_properties.set_show(1) # 0: Show / 1: Hide
-selection.clear()
-document.part.update()
-
-#Make the stator blade
-solid_stator_blade = shpfac.add_new_close_surface(stator_blade_surface)
-document.part.update()
-
-#Make pattern of the stator blade
-#Pattern
-part.in_work_object = partbody
-stator_blade_pattern = shpfac.add_new_circ_pattern(solid_stator_blade, 1, 20, 0, 18, 1, 1, ref_axis_to_ptrn, ref_axis_to_ptrn, True, 0, True)
-document.part.update()
-
-#Stator ring
-point20 = hsf.add_new_point_coord(-323, 73, 0)
-construction_elements.append_hybrid_shape(point20)
-point21 = hsf.add_new_point_coord(-323, 77, 0)
-construction_elements.append_hybrid_shape(point21)
-point22 = hsf.add_new_point_coord(-342, 77, 0)
-construction_elements.append_hybrid_shape(point22)
-point23 = hsf.add_new_point_coord(-342, 73, 0)
-construction_elements.append_hybrid_shape(point23)
-
-ring_profile = hsf.add_new_polyline()
-ring_profile.insert_element(point20, 0)
-ring_profile.insert_element(point20, 1)
-ring_profile.insert_element(point21, 2)
-ring_profile.insert_element(point22, 3)
-ring_profile.insert_element(point23, 4)
-ring_profile.insert_element(point20, 5)
-
-construction_elements.append_hybrid_shape(ring_profile)
-document.part.update()
-
-ring_revolve = hsf.add_new_revol(ring_profile, 0, 360, ref_axis_to_ptrn)
-construction_elements.append_hybrid_shape(ring_revolve)
-document.part.update()
-
-#Hide the ring_surface
-selection.clear();
-selection.add(ring_revolve)
-selection.vis_properties.set_show(1) # 0: Show / 1: Hide
-selection.clear()
-document.part.update()
-
-#Make the ring solid
-solid_strut  = shpfac.add_new_close_surface(ring_revolve)
-document.part.update()
-
-#____________Inner Nacelle surface_________________________________________________
-#__________________________________________________________________________________
-
-point24 = hsf.add_new_point_coord(-100, 87, 0)
-construction_elements.append_hybrid_shape(point24)
-document.part.update()
-
-point25 = hsf.add_new_point_coord(-125, 87, 0)
-construction_elements.append_hybrid_shape(point25)
-document.part.update()
-
-point26 = hsf.add_new_point_coord(-145, 86, 0)
-construction_elements.append_hybrid_shape(point26)
-document.part.update()
-
-spline5 = hsf.add_new_spline()
-spline5.add_point(point24)
-spline5.add_point(point25)
-spline5.add_point(point26)
-construction_elements.append_hybrid_shape(spline5)
-document.part.update()
-
-point27 = hsf.add_new_point_coord(-240, 78, 0)
-construction_elements.append_hybrid_shape(point27)
-document.part.update()
-
-point28 = hsf.add_new_point_coord(-323, 77, 0)
-construction_elements.append_hybrid_shape(point28)
-document.part.update()
-
-spline6 = hsf.add_new_spline()
-spline6.add_point(point26)
-spline6.add_point(point27)
-spline6.add_point(point28)
-construction_elements.append_hybrid_shape(spline6)
-document.part.update()
-
-spline_one_for_inner_curve = hsf.add_new_join(spline5, spline6)
-construction_elements.append_hybrid_shape(spline_one_for_inner_curve)
-document.part.update()
-
-#______________Curve upto the rotor blade ring ends here_____________
-
-#Engine Part
-#Create Polyline
-
-point29 = hsf.add_new_point_coord(-342, 77, 0)
-construction_elements.append_hybrid_shape(point29)
-document.part.update()
-
-point30 = hsf.add_new_point_coord(-370, 77, 0)
-construction_elements.append_hybrid_shape(point30)
-document.part.update()
-
-point31 = hsf.add_new_point_coord(-375, 80, 0)
-construction_elements.append_hybrid_shape(point31)
-document.part.update()
-
-point32 = hsf.add_new_point_coord(-405, 80, 0)
-construction_elements.append_hybrid_shape(point32)
-document.part.update()
-
-point33 = hsf.add_new_point_coord(-410, 77, 0)
-construction_elements.append_hybrid_shape(point33)
-document.part.update()
-
-point34 = hsf.add_new_point_coord(-415, 77, 0)
-construction_elements.append_hybrid_shape(point34)
-document.part.update()
-
-point35 = hsf.add_new_point_coord(-420, 80, 0)
-construction_elements.append_hybrid_shape(point35)
-document.part.update()
-
-point36 = hsf.add_new_point_coord(-460, 80, 0)
-construction_elements.append_hybrid_shape(point36)
-document.part.update()
-
-point37 = hsf.add_new_point_coord(-465, 77, 0)
-construction_elements.append_hybrid_shape(point37)
-document.part.update()
-
-point38 = hsf.add_new_point_coord(-495, 77, 0)
-construction_elements.append_hybrid_shape(point38)
-document.part.update()
-
-point39 = hsf.add_new_point_coord(-502, 78, 0)
-construction_elements.append_hybrid_shape(point39)
-document.part.update()
-
-point40 = hsf.add_new_point_coord(-507, 78, 0)
-construction_elements.append_hybrid_shape(point40)
-document.part.update()
-
-point41 = hsf.add_new_point_coord(-525, 82, 0)
-construction_elements.append_hybrid_shape(point41)
-document.part.update()
-
-point42 = hsf.add_new_point_coord(-570, 82, 0)
-construction_elements.append_hybrid_shape(point42)
-document.part.update()
-
-point43 = hsf.add_new_point_coord(-580, 87, 0)
-construction_elements.append_hybrid_shape(point43)
-document.part.update()
-
-point44 = hsf.add_new_point_coord(-610, 87, 0)
-construction_elements.append_hybrid_shape(point44)
-document.part.update()
-
-nacelle_profile_part2 = hsf.add_new_polyline()
-nacelle_profile_part2.insert_element(point28, 0)
-nacelle_profile_part2.insert_element(point28, 1)
-nacelle_profile_part2.insert_element(point29, 2)
-nacelle_profile_part2.insert_element(point30, 3)
-nacelle_profile_part2.insert_element(point31, 4)
-nacelle_profile_part2.insert_element(point32, 5)
-nacelle_profile_part2.insert_element(point33, 6)
-nacelle_profile_part2.insert_element(point34, 7)
-nacelle_profile_part2.insert_element(point35, 8)
-nacelle_profile_part2.insert_element(point36, 9)
-nacelle_profile_part2.insert_element(point37, 10)
-nacelle_profile_part2.insert_element(point38, 11)
-nacelle_profile_part2.insert_element(point39, 12)
-nacelle_profile_part2.insert_element(point40, 13)
-nacelle_profile_part2.insert_element(point41, 14)
-nacelle_profile_part2.insert_element(point42, 15)
-nacelle_profile_part2.insert_element(point43, 16)
-nacelle_profile_part2.insert_element(point44, 17)
-
-construction_elements.append_hybrid_shape(nacelle_profile_part2)
-document.part.update()
-
-point45 = hsf.add_new_point_coord(-615, 87, 0)
-construction_elements.append_hybrid_shape(point45)
-document.part.update()
-
-point46 = hsf.add_new_point_coord(-620, 82, 0)
-construction_elements.append_hybrid_shape(point46)
-document.part.update()
-
-spline7 = hsf.add_new_spline()
-spline7.add_point(point44)
-spline7.add_point(point45)
-spline7.add_point(point46)
-construction_elements.append_hybrid_shape(spline7)
-document.part.update()
-
-curve_engine_part = hsf.add_new_join(nacelle_profile_part2, spline7)
-construction_elements.append_hybrid_shape(curve_engine_part)
-document.part.update()
-
-nacelle_inner_profile_curve = hsf.add_new_join(spline_one_for_inner_curve, curve_engine_part)
-construction_elements.append_hybrid_shape(nacelle_inner_profile_curve)
-document.part.update()
-
-#converging diverging nozzle
-point47 = hsf.add_new_point_coord(-640, 77, 0)
-construction_elements.append_hybrid_shape(point47)
-document.part.update()
-
-point48 = hsf.add_new_point_coord(-660, 82, 0)
-construction_elements.append_hybrid_shape(point48)
-document.part.update()
-
-spline8 = hsf.add_new_spline()
-spline8.add_point(point46)
-spline8.add_point(point47)
-spline8.add_point(point48)
-construction_elements.append_hybrid_shape(spline8)
-document.part.update()
-
-nacelle_inner_and_nozzle = hsf.add_new_join(nacelle_inner_profile_curve, spline8)
-construction_elements.append_hybrid_shape(nacelle_inner_and_nozzle)
-document.part.update()
-
-# point49 = hsf.add_new_point_coord(-700, 87, 0)
-# construction_elements.append_hybrid_shape(point49)
-# document.part.update()
-
-# line_exhaust = hsf.add_new_line_pt_pt(point48, point49)
-# construction_elements.append_hybrid_shape(line_exhaust)
-# document.part.update()
-
-point50 = hsf.add_new_point_coord(-240, 95, 0)
-construction_elements.append_hybrid_shape(point50)
-document.part.update()
-
-point51 = hsf.add_new_point_coord(-342, 95, 0)
-construction_elements.append_hybrid_shape(point51)
-document.part.update()
-
-point52 = hsf.add_new_point_coord(-460, 95, 0)
-construction_elements.append_hybrid_shape(point52)
-document.part.update()
-
-point53 = hsf.add_new_point_coord(-660, 95, 0)
-construction_elements.append_hybrid_shape(point53)
-document.part.update()
-
-spline9 = hsf.add_new_spline()
-spline9.add_point(point24)
-spline9.add_point(point50)
-spline9.add_point(point51)
-spline9.add_point(point52)
-spline9.add_point(point53)
-construction_elements.append_hybrid_shape(spline9)
-document.part.update()
-
-line_closing_nacelle_profile = hsf.add_new_line_pt_pt(point53, point48)
-construction_elements.append_hybrid_shape(line_closing_nacelle_profile)
-document.part.update()
-
-nacelle_outer_curve = hsf.add_new_join(spline9, line_closing_nacelle_profile)
-construction_elements.append_hybrid_shape(nacelle_outer_curve)
-
-nacelle_profile = hsf.add_new_join(nacelle_inner_and_nozzle, nacelle_outer_curve)
-construction_elements.append_hybrid_shape(nacelle_profile)
-document.part.update()
-
-##________Nacelle Profile Curve finished _________####
-##_________Make Revolve_____________
-nacelle_revolved_surface = hsf.add_new_revol(nacelle_profile, 0, 360, ref_axis_to_ptrn)
-construction_elements.append_hybrid_shape(nacelle_revolved_surface)
-document.part.update()
-
-#Hide the ring_surface
-selection.clear();
-selection.add(nacelle_revolved_surface)
-selection.vis_properties.set_show(1) # 0: Show / 1: Hide
-selection.clear()
-document.part.update()
-
-nacelle = shpfac.add_new_close_surface(nacelle_revolved_surface)
-document.part.update()
-
-
-#Create_cross_section
-# pt1 = hsf.add_new_point_coord(50, 47, -150)
-# construction_elements.append_hybrid_shape(pt1)
-# pt2 = hsf.add_new_point_coord(-800, 47, -150)
-# construction_elements.append_hybrid_shape(pt2)
-# pt3 = hsf.add_new_point_coord(-800, 150, -150)
-# construction_elements.append_hybrid_shape(pt3)
-# pt4 = hsf.add_new_point_coord(50, 150, -150) 
-# construction_elements.append_hybrid_shape(pt4)
-
-# pocket_rect = hsf.add_new_polyline()
-# pocket_rect.insert_element(pt1, 0)
-# pocket_rect.insert_element(pt1, 1)
-# pocket_rect.insert_element(pt2, 2)
-# pocket_rect.insert_element(pt3, 3)
-# pocket_rect.insert_element(pt4, 4)
-# pocket_rect.insert_element(pt1, 5)
-# construction_elements.append_hybrid_shape(pocket_rect)
-# document.part.update()
-
-# view = shpfac.add_new_pocket_from_ref(pocket_rect, 200)
-# document.part.update()
-
-# selection.clear()
-# caa.message_box('Select a surface', buttons=1, title='Make selection')
-# selection.select_element2(('BiDim',), 'Select a surface', True)
-# surf_ref = selection.item2(1).value
-# print(surf_ref.name)
-# selection.clear()
-
-# shell = shpfac.add_new_shell(surf_ref, 0.5, 0)
-# document.part.update()
+exhaust_nozzle = shpfac.add_new_circ_pattern(flaps_pocket, 1, 15, 0, 24, 1, 1, x_dir, x_dir, True, 0, True)
+document.part.update()
+   
+#------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------END of CODE-----------------------------------------------------------
+#________________________________________________________________________________________________________________________
