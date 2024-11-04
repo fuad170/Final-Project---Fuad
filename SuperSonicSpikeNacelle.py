@@ -3,6 +3,9 @@
 #.....................................................................
 from pycatia import catia
 from pycatia.mec_mod_interfaces.part_document import PartDocument
+import tkinter as tk
+from tkinter import Tk
+from tkinter import messagebox
 
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #------------------------Initiate CATIA instance----------------------
@@ -74,39 +77,80 @@ except Exception as e:
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #----------------Take the Aircraft Length from user-------------------
 #.....................................................................
-def get_aircraft_length():
-    while True:
+def aircraft_length():
+    try:    
+        def get_aircraft_len_from_user():
+            user_input = entry.get()
+            try: 
+                # Try to convert the input to a float
+                value = float(user_input)
+                root.destroy()
+                aircraft_length.value = value
+            except ValueError:
+                # If a ValueError occurs, print an error message and ask for value again
+                messagebox.showerror("Invalid input", "Please enter a numeric value")
+                entry.delete(0, tk.END)
+
+        root = Tk()
+        root.title("Supersonic Drone Generator")
         try:
-            user_input = input("Enter the length of the aircraft in foot: ")
-            # Try to convert the input to a float
-            value = float(user_input)
-            return value
-        except ValueError:
-            # If a ValueError occurs, print an error message and ask for value again
-            print("Invalid input. Please enter a numeric value.")
+            root_width = 350
+            root_height = 100
+            root.geometry(f"{root_width}x{root_height}")
+            root.resizable(False,False)
+        except Exception as e:
+            print(f"An exception occured{e}")
+
+        label = tk.Label(root, text="Enter the length of the drone in feet: ")
+        label.pack(padx=10, pady=5)
+
+        entry = tk.Entry(root)
+        entry.pack(padx=10, pady=5)
+
+        submit_button = tk.Button(root, text="Enter", command=get_aircraft_len_from_user)
+        submit_button.pack(pady=10)
+
+        root.mainloop()
+
+        return aircraft_length.value
+    
+    except Exception as e:
+        print(f"An exception occured{e}")
 
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #-----------------------Controlling Parameters------------------------
 #.....................................................................
-L_Aircraft = get_aircraft_length()*10       #Length of the aircraft fuselage from nose to tail
-W_Aircraft = L_Aircraft*(3/10)              #Span of the aircraft fuselage between two engines
-L_Nacelle = L_Aircraft/2.4                  #Length of the nacelle including exhaust nozzle
-L_Spike = L_Nacelle/2                       #Length of the spiike from tip to root
-R_Spike = L_Spike/10                        #Maximum Radius of the spike
-clearance = R_Spike/5                       #Clearance Between Inlet Spike and Nacelle Body
-R_Nacelle = (L_Nacelle/20) + clearance      #Effective Radius of the Nacalle
-offset = (L_Spike/5)                        #Distance from spike tip to nacelle edge at inlet
+try:
+    L_Aircraft = aircraft_length()*10           #Length of the aircraft fuselage from nose to tail
+    W_Aircraft = L_Aircraft*(3/10)              #Span of the aircraft fuselage between two engines
+    L_Nacelle = L_Aircraft/2.4                  #Length of the nacelle including exhaust nozzle
+    L_Spike = L_Nacelle/2                       #Length of the spiike from tip to root
+    R_Spike = L_Spike/10                        #Maximum Radius of the spike
+    clearance = R_Spike/5                       #Clearance Between Inlet Spike and Nacelle Body
+    R_Nacelle = (L_Nacelle/20) + clearance      #Effective Radius of the Nacalle
+    offset = (L_Spike/5)                        #Distance from spike tip to nacelle edge at inlet
+    l = L_Spike
+    r = R_Spike
+    w = offset
+    L = L_Nacelle
+    R = R_Nacelle                        
+except Exception as e:
+    print(f"An exception occured{e}")
 
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #-------------------------Defininig Fucntions-------------------------
 #.....................................................................
 
-#Fucntion to generate points in geometrical set
+#Fucntion to append hybrid shape in geometrical set and update te document
+def append_in_geometrical_set_and_update(shape_to_append):
+    geometrical_set.append_hybrid_shape(shape_to_append)
+    document.part.update()
+
+#Fucntion to generate points in geometrical set    
 def create_construction_point(x, y, z):
     try:                 
         point = hsf.add_new_point_coord(x, y, z)
-        geometrical_set.append_hybrid_shape(point)
-        document.part.update()
+        append_in_geometrical_set_and_update(point)
         return point
     except Exception as e:
         print(f"An exception occured{e}")
@@ -115,8 +159,7 @@ def create_construction_point(x, y, z):
 def create_construction_line(point1, point2):
     try:           
         line = hsf.add_new_line_pt_pt(point1, point2)
-        geometrical_set.append_hybrid_shape(line)
-        document.part.update()
+        append_in_geometrical_set_and_update(line)
         return line
     except Exception as e:
         print(f"An exception occured{e}")
@@ -127,8 +170,7 @@ def create_construction_spline(*points):
         spline = hsf.add_new_spline()
         for point in points:
             spline.add_point(point)
-        geometrical_set.append_hybrid_shape(spline)
-        document.part.update()    
+        append_in_geometrical_set_and_update(spline)    
         return spline
     except Exception as e:
         print(f"An exception occured{e}")
@@ -142,8 +184,7 @@ def create_closed_curve_with_polyline(points_list):
                 polyline.insert_element(points_list[i-1], i)
             else:
                 polyline.insert_element(points_list[0], len(points_list)+1)
-        geometrical_set.append_hybrid_shape(polyline)
-        document.part.update()
+        append_in_geometrical_set_and_update(polyline)
         return polyline
     except Exception as e:
         print(f"An exception occured{e}")
@@ -152,8 +193,7 @@ def create_closed_curve_with_polyline(points_list):
 def mirror_entity(entity_to_mirror, reference):
     try:
         mirrored_geometry = hsf.add_new_symmetry(entity_to_mirror, reference)
-        geometrical_set.append_hybrid_shape(mirrored_geometry)
-        document.part.update()
+        append_in_geometrical_set_and_update(mirrored_geometry)
         return mirrored_geometry
     except Exception as e:
         print(f"An exception occured{e}")
@@ -162,8 +202,7 @@ def mirror_entity(entity_to_mirror, reference):
 def join_curves(curve1, curve2):
     try:
         joined_curve = hsf.add_new_join(curve1, curve2)
-        geometrical_set.append_hybrid_shape(joined_curve)
-        document.part.update()
+        append_in_geometrical_set_and_update(joined_curve)
         return joined_curve
     except Exception as e:
         print(f"An exception occured{e}")
@@ -172,8 +211,7 @@ def join_curves(curve1, curve2):
 def create_surface_revolve(curve, start_angle, end_angle, revolve_axis):
     try:             
         surfRevolution = hsf.add_new_revol(curve, start_angle, end_angle, revolve_axis)
-        geometrical_set.append_hybrid_shape(surfRevolution)
-        document.part.update() 
+        append_in_geometrical_set_and_update(surfRevolution)
         return surfRevolution
     except Exception as e:
         print(f"An exception occured{e}")
@@ -184,8 +222,7 @@ def create_lofted_surface(closed_profile1, closed_profile2):
         lofted_surface = hsf.add_new_loft()
         lofted_surface.add_section_to_loft(closed_profile1,1,1)
         lofted_surface.add_section_to_loft(closed_profile2,1,1)
-        geometrical_set.append_hybrid_shape(lofted_surface)
-        document.part.update()
+        append_in_geometrical_set_and_update(lofted_surface)
         return lofted_surface
     except Exception as e:
         print(f"An exception occured{e}")
@@ -195,8 +232,7 @@ def create_extruded_surface(reference, length_direction1, length_direction2, ori
     try:
         extruded_surface = hsf.add_new_extrude(reference, length_direction1, length_direction2, orientaton)
         extruded_surface.symmetrical_extension = symmetry
-        geometrical_set.append_hybrid_shape(extruded_surface)
-        document.part.update()
+        append_in_geometrical_set_and_update(extruded_surface)
         return extruded_surface
     except Exception as e:
         print(f"An exception occured{e}")
@@ -204,12 +240,10 @@ def create_extruded_surface(reference, length_direction1, length_direction2, ori
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #------------------Fucntion to create Inlet Spike---------------------
 #.....................................................................
-def Inlet_Spike_Generator(spike_length, spike_radius):
-    global l
-    global r
-    l = spike_length
-    r = spike_radius
+
+def Inlet_Spike_Generator():
     try:
+        part.in_work_object = partbody
         spike_profile = sketches.add(plane_XY)
         spike_profile.name = "Spike Outer Profile"
         spike2D = spike_profile.open_edition()
@@ -241,7 +275,21 @@ def strut_generator():
         strut = shpfac.add_new_close_surface(strut_surface)
         document.part.update()
         part.in_work_object = partbody
-        strut_pattern = shpfac.add_new_circ_pattern(strut, 1, 4, 0, 90, 1, 1, x_dir, x_dir, True, 0, True)
+        number_of_strut_in_radial_direction = 1
+        number_of_strut_in_angular_direction = 4
+        number_of_steps_in_radial_direction = 0
+        number_of_steps_in_angular_direction = 90
+        strut_to_copy_position_along_radial_dir = 1
+        strut_to_copy_position_along_angular_dir = 1
+        rotation_center = x_dir
+        rotation_axis = x_dir
+        reversed_rotation_axis = True
+        rotation_angle = 0
+        radius_aligned = True
+        strut_pattern = shpfac.add_new_circ_pattern(strut, number_of_strut_in_radial_direction, number_of_strut_in_angular_direction, 
+                                                    number_of_steps_in_radial_direction, number_of_steps_in_angular_direction, 
+                                                    strut_to_copy_position_along_radial_dir, strut_to_copy_position_along_angular_dir, 
+                                                    rotation_center, rotation_axis, reversed_rotation_axis, rotation_angle, radius_aligned)
         document.part.update()
         return strut_pattern
     except Exception as e:
@@ -250,10 +298,7 @@ def strut_generator():
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #--------------Fucntion to create Nacelle Proffile--------------------
 #.....................................................................
-def nacelle_generator(offset_from_spike_tip, length_of_nacelle, radius_of_nacelle):
-    w = offset_from_spike_tip
-    L =  length_of_nacelle
-    R = radius_of_nacelle
+def nacelle_generator():
     try:
         #Construction Points
         p1 = create_construction_point(-w, R, 0)
@@ -306,7 +351,21 @@ def nozzle_generator():
         document.part.update()
         #-------Adding Circular Pattern-------
         part.in_work_object = partbody
-        exhaust_nozzle = shpfac.add_new_circ_pattern(flaps_pocket, 1, 15, 0, 24, 1, 1, x_dir, x_dir, True, 0, True)
+        number_of_pockets_in_radial_direction = 1
+        number_of_pockets_in_angular_direction = 15
+        number_of_steps_in_radial_direction = 0
+        number_of_steps_in_angular_direction = 24
+        pockets_to_copy_position_along_radial_dir = 1
+        pockets_to_copy_position_along_angular_dir = 1
+        rotation_center = x_dir
+        rotation_axis = x_dir
+        reversed_rotation_axis = True
+        rotation_angle = 0
+        radius_aligned = True
+        exhaust_nozzle = shpfac.add_new_circ_pattern(flaps_pocket, number_of_pockets_in_radial_direction, number_of_pockets_in_angular_direction, 
+                                                     number_of_steps_in_radial_direction, number_of_steps_in_angular_direction, 
+                                                     pockets_to_copy_position_along_radial_dir, pockets_to_copy_position_along_angular_dir, 
+                                                     rotation_center, rotation_axis, reversed_rotation_axis, rotation_angle, radius_aligned)
         document.part.update()
         return exhaust_nozzle
     except Exception as e:
@@ -329,7 +388,21 @@ def blow_in_door_generator():
         document.part.update()
         #-------Adding Circular Pattern-------
         part.in_work_object = partbody
-        blow_in_door_ring = shpfac.add_new_circ_pattern(blow_in_door, 1, 10, 0, 36, 1, 1, x_dir, x_dir, True, 0, True)
+        number_of_doors_in_radial_direction = 1
+        number_of_doors_in_angular_direction = 10
+        number_of_steps_in_radial_direction = 0
+        number_of_steps_in_angular_direction = 36
+        doors_to_copy_position_along_radial_dir = 1
+        doors_to_copy_position_along_angular_dir = 1
+        rotation_center = x_dir
+        rotation_axis = x_dir
+        reversed_rotation_axis = True
+        rotation_angle = 0
+        radius_aligned = True
+        blow_in_door_ring = shpfac.add_new_circ_pattern(blow_in_door, number_of_doors_in_radial_direction, number_of_doors_in_angular_direction, 
+                                                        number_of_steps_in_radial_direction, number_of_steps_in_angular_direction, 
+                                                        doors_to_copy_position_along_radial_dir, doors_to_copy_position_along_angular_dir, 
+                                                        rotation_center, rotation_axis, reversed_rotation_axis, rotation_angle, radius_aligned)
         document.part.update()
         return blow_in_door_ring
     except Exception as e:
@@ -446,8 +519,7 @@ def fuselage_shape_generator(leading_edge, top_mid_point1, top_mid_point2, top_m
 #'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #--------------------Fucntion to create fuselage----------------------
 #.....................................................................
-def fuselage_generator(aircraft_fuselage_length):
-    L_Aircraft = aircraft_fuselage_length
+def fuselage_generator():
     try:
         #Fuselage part adjacent to wing
         fusel_wing_lead = create_construction_point(-(L_Aircraft/12), -(R_Nacelle*(19/15)), 0)
@@ -457,7 +529,8 @@ def fuselage_generator(aircraft_fuselage_length):
         fusel_wing_trail = create_construction_point(-(L_Aircraft*(5/12)), -(R_Nacelle*(19/15)), 0)
         fusel_wing_bottom = create_construction_point(-(L_Aircraft/4), -(R_Nacelle*(19/15)), -(R_Nacelle/6))
 
-        fuselage_wing_adjacent_profile = fuselage_shape_generator(fusel_wing_lead, fusel_wing_top_1, fusel_wing_top_2, fusel_wing_top_3, fusel_wing_trail, fusel_wing_bottom)
+        fuselage_wing_adjacent_profile = fuselage_shape_generator(fusel_wing_lead, fusel_wing_top_1, fusel_wing_top_2, 
+                                                                  fusel_wing_top_3, fusel_wing_trail, fusel_wing_bottom)
 
         #Fuselage part in midplane
         fusel_mid_lead = create_construction_point((L_Aircraft/2), -(W_Aircraft/2), 0)
@@ -467,7 +540,8 @@ def fuselage_generator(aircraft_fuselage_length):
         fusel_mid_trail = create_construction_point(-(L_Aircraft/2), -(W_Aircraft/2), 0)
         fusel_mid_bottom = create_construction_point(0, -(W_Aircraft/2), -(L_Aircraft/60))
 
-        fuselage_midplane_profile = fuselage_shape_generator(fusel_mid_lead, fusel_mid_top_1, fusel_mid_top_2, fusel_mid_top_3, fusel_mid_trail, fusel_mid_bottom)
+        fuselage_midplane_profile = fuselage_shape_generator(fusel_mid_lead, fusel_mid_top_1, fusel_mid_top_2, 
+                                                             fusel_mid_top_3, fusel_mid_trail, fusel_mid_bottom)
 
         half_fuselage_surface = create_lofted_surface(fuselage_wing_adjacent_profile, fuselage_midplane_profile)
 
@@ -483,69 +557,50 @@ def fuselage_generator(aircraft_fuselage_length):
 #.....................................................................
 
 #_______________Generating Spike and support strut____________________
-try:
-    part.in_work_object = partbody
-    Inlet_Spike_Generator(L_Spike, R_Spike)
-    strut_generator()
-except Exception as e:
-        print(f"An exception occured{e}")
+    
+Inlet_Spike_Generator()
+strut_generator()
 
 #______________________Generating Nacelle Body________________________
-
-#------------Creating 2D profile-------------
 try:
-    nacelle_2D_profile = nacelle_generator(offset, L_Nacelle, R_Nacelle)
-except Exception as e:
-        print(f"An exception occured{e}")
-#-------------Revolved sruface---------------
-try:
+    #------------Creating 2D profile-------------
+    nacelle_2D_profile = nacelle_generator()
+    #-------------Revolved sruface---------------
+    #curve = nacelle_2D_profile
+    #start angle = 0
+    #end angle = 360
+    #revolve_axis = x_dir
     nacelle_surface = create_surface_revolve(nacelle_2D_profile, 0, 360, x_dir)
-except Exception as e:
-        print(f"An exception occured{e}")
-#-----------------Making Solid---------------
-try:
+    #-----------------Making Solid---------------
     nacelle = shpfac.add_new_close_surface(nacelle_surface)
     document.part.update()
 except Exception as e:
         print(f"An exception occured{e}")
+
 #________________________Generating Nozzle____________________________
-try:
-    nozzle_generator()
-except Exception as e:
-        print(f"An exception occured{e}")
+nozzle_generator()
 
 #___________________Generating blow in doors__________________________
-try:
-    blow_in_door_generator()
-except Exception as e:
-        print(f"An exception occured{e}")
+blow_in_door_generator()
 
 #______________________Generating Rudder______________________________
-try:
-    rudder_generator()
-except Exception as e:
-        print(f"An exception occured{e}")
+rudder_generator()
 
 #________________________Generating Wing______________________________
-try:
-    wing_generator()
-except Exception as e:
-        print(f"An exception occured{e}")
+wing_generator()
 
 #_____________________Generating Fuselage_____________________________
-try:
-    fuselage_generator(L_Aircraft)
-except Exception as e:
-        print(f"An exception occured{e}")
+fuselage_generator()
 
 #________________Mirror to get the entire airplane____________________
+
+#----------Add Plane to Mirror--------------
 try:
     plane_to_mirror = hsf.add_new_plane_offset(plane_ZX, -(W_Aircraft/2), False)
-    geometrical_set.append_hybrid_shape(plane_to_mirror)
-    document.part.update()
+    append_in_geometrical_set_and_update(plane_to_mirror)
 except Exception as e:
         print(f"An exception occured{e}")
-
+#------------Mirror operation---------------
 try:
     part.in_work_object = partbody
     shpfac.add_new_mirror(plane_to_mirror)
@@ -554,10 +609,15 @@ except Exception as e:
         print(f"An exception occured{e}")
 
 #________________Hiding the construction elements____________________
-selection.clear();
-selection.add(geometrical_set)
-selection.vis_properties.set_show(1) # 0: Show / 1: Hide
-selection.clear()
+try:
+    selection.clear();
+    selection.add(geometrical_set)
+    selection.vis_properties.set_show(1) # 0: Show / 1: Hide
+    selection.clear()
+except Exception as e:
+    print(f"An exception occured{e}")
+
+#___________________UPDATE THE DOCUMENT_____________________       
 try:
     document.part.update()
 except Exception as e:
